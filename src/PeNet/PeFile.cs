@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using PeNet.Authenticode;
 using PeNet.ImpHash;
+using PeNet.Parser;
 using PeNet.Structures;
 using PeNet.Structures.MetaDataTables;
 using PeNet.Utilities;
@@ -417,6 +418,35 @@ namespace PeNet
 
             return (dosHeader.e_magic == 0x5a4d) && is32;
         }
+
+        public static ImportFunction[] GetImportedPeFile(string file)
+        {
+            var buff = File.ReadAllBytes(file);
+            try
+            {
+                var nativeStructureParsers = new NativeStructureParsers(buff);
+
+                var rawAddress = nativeStructureParsers.ImageNtHeaders
+                                                       .OptionalHeader
+                                                       .DataDirectory[(int)Constants.DataDirectoryIndex.Import]
+                                                       .VirtualAddress
+                                                       .SafeRVAtoFileMapping(nativeStructureParsers.ImageSectionHeaders);
+
+                var imageParser = new ImageImportDescriptorsParser(buff, rawAddress.Value);
+
+                var importParser = new ImportedFunctionsParser(buff,
+                                                               imageParser.GetParserTarget(),
+                                                               nativeStructureParsers.ImageSectionHeaders,
+                                                               nativeStructureParsers.Is64Bit);
+
+                return importParser.GetParserTarget();
+            }
+            catch
+            {
+                return new ImportFunction[0];
+            }
+        }
+
 
         /// <summary>
         ///     Returns if the PE file is a EXE, DLL and which architecture
