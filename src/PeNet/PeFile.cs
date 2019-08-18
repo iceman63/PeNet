@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
+using Newtonsoft.Json;
 using PeNet.Authenticode;
 using PeNet.ImpHash;
 using PeNet.Parser;
 using PeNet.Structures;
-using PeNet.Structures.MetaDataTables;
 using PeNet.Utilities;
 
 namespace PeNet
@@ -16,7 +15,7 @@ namespace PeNet
     ///     This class represents a Portable Executable (PE) file and makes the different
     ///     header and properties accessible.
     /// </summary>
-    public partial class PeFile
+    public partial class PeFile : AbstractStructure
     {
         private readonly DataDirectoryParsers _dataDirectoryParsers;
         private readonly NativeStructureParsers _nativeStructureParsers;
@@ -26,13 +25,15 @@ namespace PeNet
         /// <summary>
         ///     The PE binary as a byte array.
         /// </summary>
-        public readonly byte[] Buff;
+        [JsonIgnore]
+        public new byte[] Buff => base.Buff;
 
         private Stream _stream = null;
 
         /// <summary>
         ///     The PE binary as a stream.
         /// </summary>
+        [JsonIgnore]
         public Stream Stream => _stream ?? (_stream = new MemoryStream(Buff));
 
         private string _impHash;
@@ -44,9 +45,8 @@ namespace PeNet
         ///     Create a new PeFile object.
         /// </summary>
         /// <param name="buff">A PE file a byte array.</param>
-        public PeFile(byte[] buff)
+        public PeFile(byte[] buff) : base(buff, 0)
         {
-            Buff = buff;
             _nativeStructureParsers = new NativeStructureParsers(Buff);
 
             _dataDirectoryParsers = new DataDirectoryParsers(
@@ -74,6 +74,17 @@ namespace PeNet
         {
             FileLocation = peFile;
         }
+
+        /// <summary>
+        /// Save the current PE file as 
+        /// a new file on disk.
+        /// </summary>
+        /// <param name="path"></param>
+        public void SaveAs(string path)
+        {
+            File.WriteAllBytes(path, Buff);
+        }
+
 
         /// <summary>
         ///     Returns true if the Export directory is valid.
@@ -133,7 +144,8 @@ namespace PeNet
         ///     based on the Subsytem = 0x1 value in the Optional Header.
         /// </summary>
         public bool IsDriver => ImageNtHeaders.OptionalHeader.Subsystem ==
-                                (ushort) Constants.OptionalHeaderSubsystem.IMAGE_SUBSYSTEM_NATIVE;
+                                (ushort)Constants.OptionalHeaderSubsystem.IMAGE_SUBSYSTEM_NATIVE
+                                && ImportedFunctions.FirstOrDefault(i => i.DLL == "ntoskrnl.exe") != null;
 
         /// <summary>
         ///     Returns true if the PE file is signed. It
@@ -195,7 +207,7 @@ namespace PeNet
         /// <summary>
         ///     Access the IMAGE_DEBUG_DIRECTORY of the PE file.
         /// </summary>
-        public IMAGE_DEBUG_DIRECTORY ImageDebugDirectory => _dataDirectoryParsers.ImageDebugDirectory;
+        public IMAGE_DEBUG_DIRECTORY[] ImageDebugDirectory => _dataDirectoryParsers.ImageDebugDirectory;
 
         /// <summary>
         ///     Access the exported functions as an array of parsed objects.
@@ -282,11 +294,6 @@ namespace PeNet
         ///     Meta Data Streams of the .Net header.
         /// </summary>
         public METADATATABLESHDR MetaDataStreamTablesHeader => _dotNetStructureParsers.MetaDataStreamTablesHeader;
-
-        /// <summary>
-        ///     Access the Meta Data Tables from the .Net header stream #~.
-        /// </summary>
-        public MetaDataTables MetaDataTables => _dotNetStructureParsers.MetaDataTables;
 
         /// <summary>
         ///     The SHA-256 hash sum of the binary.
@@ -486,19 +493,6 @@ namespace PeNet
 
 
             return fileType;
-        }
-
-
-        /// <summary>
-        ///     Creates a string representation of the objects
-        ///     properties.
-        /// </summary>
-        /// <returns>PE Header properties as a string.</returns>
-        public override string ToString()
-        {
-            var sb = new StringBuilder("PE HEADER:\n");
-            sb.Append(this.PropertiesToString("{0,-15}:\t{1,10:X}\n"));
-            return sb.ToString();
         }
     }
 }

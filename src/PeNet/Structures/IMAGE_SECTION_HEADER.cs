@@ -1,5 +1,4 @@
-﻿using System.Text;
-using PeNet.Utilities;
+﻿using PeNet.Utilities;
 
 namespace PeNet.Structures
 {
@@ -11,12 +10,19 @@ namespace PeNet.Structures
         /// <summary>
         ///     Create a new IMAGE_SECTION_HEADER object.
         /// </summary>
+        /// <param name="imageBaseAddress">Base address of the image from the Optional header.</param>
         /// <param name="buff">A PE file as a byte array.</param>
         /// <param name="offset">Raw offset to the section header.</param>
-        public IMAGE_SECTION_HEADER(byte[] buff, uint offset)
+        public IMAGE_SECTION_HEADER(byte[] buff, uint offset, ulong imageBaseAddress)
             : base(buff, offset)
         {
+            ImageBaseAddress = imageBaseAddress;
         }
+
+        /// <summary>
+        /// Base address of the image from the Optional header.
+        /// </summary>
+        public ulong ImageBaseAddress { get; }
 
         /// <summary>
         ///     Max. 8 byte long UTF-8 string that names
@@ -137,17 +143,6 @@ namespace PeNet.Structures
         {
             get { return Buff.BytesToUInt32(Offset + 0x24); }
             set { Buff.SetUInt32(Offset + 0x24, value); }
-        }
-
-        /// <summary>
-        ///     Create a string from all object properties.
-        /// </summary>
-        /// <returns>Section header properties as a string.</returns>
-        public override string ToString()
-        {
-            var sb = new StringBuilder("IMAGE_SECTION_HEADER\n");
-            sb.Append(this.PropertiesToString("{0,-10}:\t{1,10:X}\n"));
-            return sb.ToString();
         }
     }
 }

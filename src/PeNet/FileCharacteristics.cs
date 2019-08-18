@@ -48,7 +48,7 @@ namespace PeNet
                 RemovableRunFromSwap = true;
 
             if ((characteristics & (ushort) Constants.FileHeaderCharacteristics.IMAGE_FILE_NET_RUN_FROM_SWAP) > 0)
-                NetRunFroMSwap = true;
+                NetRunFromSwap = true;
 
             if ((characteristics & (ushort) Constants.FileHeaderCharacteristics.IMAGE_FILE_SYSTEM) > 0)
                 System = true;
@@ -116,7 +116,7 @@ namespace PeNet
         /// <summary>
         ///     If the image is on the network, copy and run it from the swap file.
         /// </summary>
-        public bool NetRunFroMSwap { get; private set; }
+        public bool NetRunFromSwap { get; private set; }
 
         /// <summary>
         ///     The image is a system file.
@@ -138,16 +138,5 @@ namespace PeNet
         ///     (OBSOLETE) Reserved.
         /// </summary>
         public bool BytesReversedHi { get; private set; }
-
-        /// <summary>
-        ///     Return string representation of all characteristics.
-        /// </summary>
-        /// <returns>Return string representation of all characteristics.</returns>
-        public override string ToString()
-        {
-            var sb = new StringBuilder("File Characteristics\n");
-            sb.Append(ExtensionMethods.PropertiesToString(this, "{0,-30}:{1,10:X}\n"));
-            return sb.ToString();
-        }
     }
 }

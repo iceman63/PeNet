@@ -50,7 +50,7 @@ namespace PeNet
         public IMAGE_RESOURCE_DIRECTORY ImageResourceDirectory => _imageResourceDirectoryParser?.GetParserTarget();
         public IMAGE_BASE_RELOCATION[] ImageBaseRelocations => _imageBaseRelocationsParser?.GetParserTarget();
         public WIN_CERTIFICATE WinCertificate => _winCertificateParser?.GetParserTarget();
-        public IMAGE_DEBUG_DIRECTORY ImageDebugDirectory => _imageDebugDirectoryParser?.GetParserTarget();
+        public IMAGE_DEBUG_DIRECTORY[] ImageDebugDirectory => _imageDebugDirectoryParser?.GetParserTarget();
         public RUNTIME_FUNCTION[] RuntimeFunctions => _runtimeFunctionsParser?.GetParserTarget();
         public ExportFunction[] ExportFunctions => _exportedFunctionsParser?.GetParserTarget();
         public ImportFunction[] ImportFunctions => _importedFunctionsParser?.GetParserTarget();
@@ -118,8 +118,7 @@ namespace PeNet
             return rawAddress == null ? null : new ImageBoundImportDescriptorParser(_buff, rawAddress.Value);
         }
 
-        private ImportedFunctionsParser InitImportedFunctionsParser()
-        {
+        private ImportedFunctionsParser InitImportedFunctionsParser() {
             return new ImportedFunctionsParser(
                 _buff,
                 ImageImportDescriptors,
@@ -130,7 +129,11 @@ namespace PeNet
 
         private ExportedFunctionsParser InitExportFunctionParser()
         {
-            return new ExportedFunctionsParser(_buff, ImageExportDirectories, _sectionHeaders);
+            return new ExportedFunctionsParser(
+                _buff, 
+                ImageExportDirectories, 
+                _sectionHeaders, 
+                _dataDirectories[(int) Constants.DataDirectoryIndex.Export]);
         }
 
         private WinCertificateParser InitWinCertificateParser()
@@ -149,8 +152,9 @@ namespace PeNet
         {
             var rawAddress =
                 _dataDirectories[(int) Constants.DataDirectoryIndex.Debug].VirtualAddress.SafeRVAtoFileMapping(_sectionHeaders);
+            var size = _dataDirectories[(int)Constants.DataDirectoryIndex.Debug].Size;
 
-            return rawAddress == null ? null : new ImageDebugDirectoryParser(_buff, rawAddress.Value);
+            return rawAddress == null ? null : new ImageDebugDirectoryParser(_buff, rawAddress.Value, size);
         }
 
         private ImageResourceDirectoryParser InitImageResourceDirectoryParser()
