@@ -300,7 +300,7 @@ namespace PeNet.Utilities
         /// <returns>Raw file address.</returns>
         public static ulong VAtoFileMapping(this ulong VA, ICollection<IMAGE_SECTION_HEADER> sh)
         {
-            VA -= 0x00400000;
+            VA -= sh.FirstOrDefault().ImageBaseAddress;
             var sortedSt = sh.OrderBy(x => x.VirtualAddress).ToList();
             uint vOffset = 0, rOffset = 0;
             var secFound = false;
@@ -512,21 +512,6 @@ namespace PeNet.Utilities
         public static long ToIntFromHexString(this string hexString)
         {
             return (long) new Int64Converter().ConvertFromString(hexString);
-        }
-
-        internal static string PropertiesToString(this object obj, string format)
-        {
-            var properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var sb = new StringBuilder();
-            foreach (var p in properties)
-            {
-                if (p.PropertyType.IsArray)
-                    continue;
-
-                sb.AppendFormat(format, p.Name, p.GetValue(obj, null));
-            }
-
-            return sb.ToString();
         }
 
         internal static ushort GetOrdinal(this byte[] buff, uint ordinal)
